@@ -1,0 +1,6 @@
+apiVersion: v2
+name: logto
+description: A Helm chart for Logto Identity Service
+type: application
+version: 0.1.0
+appVersion: "latest"

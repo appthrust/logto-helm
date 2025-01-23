@@ -1,0 +1,127 @@
+# Default values for logto.
+
+replicaCount: 1
+
+image:
+  repository: svhd/logto
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  # Service type: ClusterIP, LoadBalancer, or NodePort
+  type: ClusterIP
+  ports:
+    # Main API endpoint
+    - name: http-main
+      port: 3001
+      targetPort: 3001
+    # Admin endpoint
+    - name: http-admin
+      port: 3002
+      targetPort: 3002
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+# Resource limits and requests for the Logto application
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Logto specific configurations
+logto:
+  # TRUST_PROXY_HEADER: Set to true if your Logto instance is behind a reverse proxy
+  # This is important for security when running behind an ingress controller
+  trustProxyHeader: true
+  
+  # ENDPOINT: The public URL for the Logto API
+  # Example: https://logto.example.com/api
+  endpoint: ""
+  
+  # ADMIN_ENDPOINT: The public URL for the Logto admin console
+  # Example: https://logto.example.com/admin
+  adminEndpoint: ""
+
+# PostgreSQL configurations
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    # Using PostgreSQL 17 Alpine for smaller image size
+    tag: "17-alpine"
+  auth:
+    username: postgres
+    password: p0stgr3s
+    database: logto
+  service:
+    port: 5432
+  # Resource limits and requests for PostgreSQL
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  persistence:
+    enabled: true
+    # Size of the persistent volume claim
+    # Adjust based on your expected database size and growth
+    # Default 8Gi is suitable for small to medium deployments
+    # For production, consider increasing based on your data retention needs
+    size: 8Gi
+
+# Health check endpoints
+# The Logto application exposes a health check endpoint at:
+# /api/.well-known/health
+# This is used by the kubernetes probes to determine pod health

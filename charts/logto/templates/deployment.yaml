@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "logto.fullname" . }}
+  labels:
+    {{- include "logto.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "logto.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "logto.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "logto.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-db
+          image: postgres:17-alpine
+          command: ['sh', '-c', 'until pg_isready -h {{ include "logto.fullname" . }}-postgresql -p {{ .Values.postgresql.service.port }}; do echo waiting for postgresql; sleep 2; done;']
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
+          ports:
+            {{- range .Values.service.ports }}
+            - name: {{ .name }}
+              containerPort: {{ .targetPort }}
+              protocol: TCP
+            {{- end }}
+          env:
+            - name: TRUST_PROXY_HEADER
+              value: {{ .Values.logto.trustProxyHeader | quote }}
+            - name: DB_URL
+              value: {{ include "logto.databaseUrl" . | quote }}
+            {{- if .Values.logto.endpoint }}
+            - name: ENDPOINT
+              value: {{ .Values.logto.endpoint | quote }}
+            {{- end }}
+            {{- if .Values.logto.adminEndpoint }}
+            - name: ADMIN_ENDPOINT
+              value: {{ .Values.logto.adminEndpoint | quote }}
+            {{- end }}
+          # Changed health check path to /api/health which is more common
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: {{ index .Values.service.ports 0 "targetPort" }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: {{ index .Values.service.ports 0 "targetPort" }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
