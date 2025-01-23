@@ -121,6 +121,16 @@ postgresql:
     # For production, consider increasing based on your data retention needs
     size: 8Gi
 
+# Secret Extractor Job configuration
+secretExtractor:
+  enabled: true
+  image:
+    repository: bitnami/kubectl
+    tag: latest
+  serviceAccount:
+    create: true
+    annotations: {}
+
 # Health check endpoints
 # The Logto application exposes a health check endpoint at:
 # /api/.well-known/health
