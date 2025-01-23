@@ -4,18 +4,14 @@ A Helm chart for deploying [Logto](https://logto.io/) Identity Service on Kubern
 
 ## Prerequisites
 
-- Kubernetes 1.16+
+- Kubernetes 1.30+
 - Helm 3.0+
 - PV provisioner support in the underlying infrastructure (if persistence is enabled)
 
 ## Installation
 
 ```bash
-# Add the repository
-helm repo add logto https://charts.logto.io
-
-# Install the chart
-helm install my-logto logto/logto
+helm install logto ./charts/logto
 ```
 
 ## Configuration
@@ -105,12 +101,12 @@ postgresql:
 2. Install the chart:
 
 ```bash
-helm install my-logto logto/logto -f values.yaml
+helm install logto ./charts/logto -f values.yaml
 ```
 
 ## Health Checks
 
-The Logto application exposes a health check endpoint at `/api/.well-known/health` which is used by Kubernetes probes to determine pod health.
+The Logto application exposes a health check endpoint at `/api/status` which is used by Kubernetes probes to determine pod health.
 
 ## Notes
 
